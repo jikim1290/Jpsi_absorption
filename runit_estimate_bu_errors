@@ -1,0 +1,17 @@
+#!/bin/csh
+ setenv HOME /phenix/u/$LOGNAME
+ source /etc/csh.login
+ foreach i (/etc/profile.d/*.csh)
+   source $i
+ end
+source /opt/sphenix/core/bin/sphenix_setup.csh
+setenv LD_LIBRARY_PATH  /phenix/u/frawley/git/install/lib:$LD_LIBRARY_PATH
+printenv
+echo "runit"
+echo "nargs"
+echo $#
+echo "process"
+echo $1
+# arg 1 is process number - used by macro to name input and output files
+
+root -b -q  'estimate_breakup_modification_errors.C('$1' )'
