@@ -36,7 +36,7 @@ double sigma1 = 7.2; double r0 = 0.16; double vcc = 1.0;
 //double sigma1 = 7.6; double r0 = 0.14; double vcc = 1.05;
 
 
-int ChangeOptions = 5;
+int ChangeOptions = 1;
 // 1: System with AuAu
 // 2: System with PbPb
 // 4: Upsilon
@@ -98,7 +98,9 @@ void calculate_sigma_breakup()
   if( ChangeOptions&1 ){
 	fhist = new TFile("rT_distributions_auau.root");
   }
-
+  else if( ChangeOptions&2 ){
+    fhist = new TFile("rT_distributions_pbpb.root");
+  }
   if(!fhist)
     {
       cout << "Failed to open rT distribution file " << endl;
@@ -254,6 +256,7 @@ double return_sigma_breakup(double Ebeam, double Mstate, double ystate, double p
   double pz = sqrt(pow(Ebeam,2) - pow(Mbeam,2));
   double ybeam = 0.5 * log((Ebeam+pz)/(Ebeam-pz));
   double yrel = ybeam + ystate;
+  yrel =0.0;
   double ccbar_roots = get_ccbar_sqrts(yrel,Mstate,pt);
 
   // Since sigma is not linear in tau, using the average path length is not good enough

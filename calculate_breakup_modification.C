@@ -50,6 +50,11 @@ void calculate_breakup_modification(double sigma1 = 7.2, double r0 = 0.16, doubl
 
   // Set the breakup parameters in "calculate_sigma_breakup")
   set_breakup_parameters(sigma1, r0, vcc);
+  if( ChangeOptions&4 ){
+	set_breakup_parameters(sigma1, 0, 0.28);
+  }
+
+
   cout << " Breakup model parameters set to sigma 1 = " << sigma1 << " r0 " << r0 << " vcc " << vcc << endl;
 
   // initially define target parameter, will be set to correct value later
@@ -75,9 +80,9 @@ void calculate_breakup_modification(double sigma1 = 7.2, double r0 = 0.16, doubl
   
   // set up the rapidity 
   // currently assumed to be the same for psi(1S) and psi(2S)
-  static const int NRAP = 8;
-  double y[NRAP] = {-2.075, -1.825 , -1.575, -1.325, 1.325, 1.575, 1.825, 2.075};   
-  double BdNdy[NRAP] = {0.325, 0.515, 0.68, 0.90, 0.66, 0.53, 0.41, 0.30};
+  static const int NRAP = 9;
+  double y[NRAP] = {-2.075, -1.825 , -1.575, -1.325, 0, 1.325, 1.575, 1.825, 2.075};   
+  double BdNdy[NRAP] = {0.325, 0.515, 0.68, 0.90, 1, 0.66, 0.53, 0.41, 0.30};
   
   static const int NARMS = 2;
   double ylow[NARMS]={-2.2, 1.2};
@@ -114,6 +119,8 @@ void calculate_breakup_modification(double sigma1 = 7.2, double r0 = 0.16, doubl
   fhist = new TFile("rT_distributions_pau.root");
   if( ChangeOptions&1 ){
 	fhist = new TFile("rT_distributions_auau.root");
+  } else if( ChangeOptions&2 ){
+	fhist = new TFile("rT_distributions_pbpb.root");
   }
   if(!fhist)
     {
@@ -139,7 +146,7 @@ void calculate_breakup_modification(double sigma1 = 7.2, double r0 = 0.16, doubl
 
   // combine glauber centralities to get the experimental ones
   //========================================
-  static const int NCENT = 8;  // includes MB and 0-20%
+  static const int NCENT = 6;  // includes MB and 0-20%
   TH1D *hrT[NCENT];
   hrT[0] = (TH1D*) hrT_in[0]->Clone();   // 0-5
   hrT[1] =  (TH1D*) hrT_in[1]->Clone();   // 5-10
@@ -150,22 +157,11 @@ void calculate_breakup_modification(double sigma1 = 7.2, double r0 = 0.16, doubl
   hrT[4]->Add( (TH1D*) hrT_in[6]->Clone());  // 50-60
   hrT[5] =  (TH1D*) hrT_in[8]->Clone();   // is this  actually 60-84, based on counts?
   hrT[5]->Add( (TH1D*) hrT_in[7]->Clone());  // 60-70
-  // hrT[6] is MB
-  hrT[6] = (TH1D*) hrT[0]->Clone();
-  hrT[6]->Add(hrT[1]);
-  hrT[6]->Add(hrT[2]);
-  hrT[6]->Add(hrT[3]);
-  hrT[6]->Add(hrT[4]);
-  hrT[6]->Add(hrT[5]);
-  // hrT[7] is 0-20% 
-  hrT[7] = (TH1D*) hrT[0]->Clone();
-  hrT[7]->Add(hrT[1]);
-  hrT[7]->Add(hrT[2]);
 
   double ncoll[NCENT] = {9.7, 8.4, 7.4, 6.1, 4.4, 2.6};
-  int col[NCENT] = {kRed, kGreen, kBlue, kMagenta, kViolet, kRed, kBlack};
-  int centlow[NCENT] = {0, 5, 10, 20, 40, 60, 0};
-  int centhigh[NCENT] = {5,10,20,40,60,84,100};
+  int col[NCENT] = {kRed, kGreen, kBlue, kMagenta, kViolet, kRed };
+  int centlow[NCENT] = {0, 5, 10, 20, 40, 60 };
+  int centhigh[NCENT] = {5,10,20,40,60,84 };
 
 #endif
 
@@ -447,8 +443,11 @@ void calculate_breakup_modification(double sigma1 = 7.2, double r0 = 0.16, doubl
 
   // Jpsi at RHIC
   double Ebeam = 100;
+  if( ChangeOptions&2 ){
+	Ebeam = 2510;
+  }
   double mstate;
-  if( ChangeOptions&4 ){
+  if( !ChangeOptions&4 ){
 	mstate = 3.4;
   } else{
 	mstate = 10.0;
@@ -481,10 +480,10 @@ void calculate_breakup_modification(double sigma1 = 7.2, double r0 = 0.16, doubl
 	      //   - i.e. the average absorption corresponds to a starting point of z = 0
 
 	      sigmod[irap][ipt][irt] = exp(-sigbr[irap][ipt][irt]*0.10*thick[irt]*0.5);  
-		  if( ChangeOptions&1 && ChangeOptions&2 )
+		  if( ChangeOptions&1 || ChangeOptions&2 )
 			sigmod[irap][ipt][irt] = exp(-sigbr[irap][ipt][irt]*0.10*thick[irt]*1.);
-	      if(irap > 3)
-		sigmod[irap][ipt][irt] = 1.0;   // sigbr not applied at forward rapidity
+//	      if(irap > 3)
+//		sigmod[irap][ipt][irt] = 1.0;   // sigbr not applied at forward rapidity
 	    }
 	}
     }
@@ -619,7 +618,7 @@ void calculate_breakup_modification(double sigma1 = 7.2, double r0 = 0.16, doubl
 
       for(int icent=0;icent<NCENT; ++icent)
 	{
-	  for(int irap=0;irap < 4; ++irap)
+	  for(int irap=0;irap < NRAP; ++irap)
 	    {
 	      cout << "Centrality: " << icent << " irap " << irap << " cent_sigmod " << cent_sigmod[icent][irap] << endl;	      
 	    }
@@ -792,7 +791,7 @@ void calculate_breakup_modification(double sigma1 = 7.2, double r0 = 0.16, doubl
       TCanvas *crap = new TCanvas("crap","crap", 5,5,800,800);
       gPad->SetLeftMargin(0.15);
       
-      TH1D *hrap = new TH1D("hrap","hrap",100,-2.5, 0.0);
+      TH1D *hrap = new TH1D("hrap","hrap",100,-2.5, 2.5);
       hrap->GetYaxis()->SetTitle("Modification (absorption only)");
       hrap->GetYaxis()->SetTitleOffset(1.4);
       hrap->GetXaxis()->SetTitle("rapidity");
