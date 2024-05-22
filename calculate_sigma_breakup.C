@@ -36,11 +36,11 @@ double sigma1 = 7.2; double r0 = 0.16; double vcc = 1.0;
 //double sigma1 = 7.6; double r0 = 0.14; double vcc = 1.05;
 
 
-int ChangeOptions = 1;
+int ChangeOptions = 0;
 // 1: System with AuAu
 // 2: System with PbPb
-// 4: Upsilon
-
+// 4: Upsilon 1S
+// 8: Upsilon 2S
 
 void calculate_sigma_breakup()
 {
@@ -75,16 +75,28 @@ void calculate_sigma_breakup()
     pt = 2.4;
     if( ChangeOptions&4 ){
 		pt = 5.91;
-		mstate = 10.0;
+		mstate = 9.46;
+	} else if( ChangeOptions&8 ){
+		pt = 5.91;
+        mstate = 10.02;
 	}
   } else{
 	if( ChangeOptions&4 ){
 		pt = 3.07; 
-		mstate = 10.0;
-	}
+		mstate = 9.46;
+	} else if( ChangeOptions&8 ){
+        pt = 5.91;
+        mstate = 10.02;
+    }
   }
 
+  if( ChangeOptions&4 || ChangeOptions&8 ){
+	sigma1 = 4.1890909;
+	r0 = 0.054161983;
+	vcc = 0.17167603;
+  }
 
+  cout << "Ebeam: " << Ebeam << endl;
   
   // Get the rT distributions from the input file
   //==============================
@@ -256,7 +268,6 @@ double return_sigma_breakup(double Ebeam, double Mstate, double ystate, double p
   double pz = sqrt(pow(Ebeam,2) - pow(Mbeam,2));
   double ybeam = 0.5 * log((Ebeam+pz)/(Ebeam-pz));
   double yrel = ybeam + ystate;
-  yrel =0.0;
   double ccbar_roots = get_ccbar_sqrts(yrel,Mstate,pt);
 
   // Since sigma is not linear in tau, using the average path length is not good enough
@@ -382,12 +393,16 @@ double get_sigma(double ccbar_roots, double tau)
   // There are three states - J/psi, psi' and chi_C
   // These are the numbers used by Arleo
   double rpsi[3] = {0.43,0.87,0.67};
-  // These are from PPG104
   double fdfrac[3] = {0.58,0.1,0.32};
 
   if( ChangeOptions&4 ){
 	rpsi[0] = 0.14; rpsi[1] = 0.28; rpsi[2] = 0.39;
 	fdfrac[0] = 0.67; fdfrac[1] = 0.30; fdfrac[2] = 0.03;
+//    fdfrac[0] = 1.; fdfrac[1] = 0.0; fdfrac[2] = 0.0;
+  }
+  if( ChangeOptions&8 ){
+    rpsi[0] = 0.28; rpsi[1] = 0.39; rpsi[2] = 1.0;
+    fdfrac[0] = 0.30; fdfrac[1] = 0.30; fdfrac[2] = 0.0;
   }
 
   double sigma = 0.0;

@@ -38,7 +38,8 @@ double get_WS_rho_0();
 
 
 // set parameters here so macro can be called by condor with different parameters, for error estimation
-void calculate_breakup_modification(double sigma1 = 7.2, double r0 = 0.16, double vcc = 1.0, int process = 0) 
+//void calculate_breakup_modification(double sigma1 = 7.2, double r0 = 0.16, double vcc = 1.0, int process = 0) 
+void calculate_breakup_modification(int process = 0)
 {
  cout << "ChangeOptions in breakup_mod: " << ChangeOptions << endl;
   gROOT->SetStyle("Plain");
@@ -49,11 +50,21 @@ void calculate_breakup_modification(double sigma1 = 7.2, double r0 = 0.16, doubl
   bool jpsi = true;
 
   // Set the breakup parameters in "calculate_sigma_breakup")
-  set_breakup_parameters(sigma1, r0, vcc);
-  if( ChangeOptions&4 ){
-	set_breakup_parameters(sigma1, 0, 0.28);
-  }
+//  set_breakup_parameters(4.1890909, 0.093090909, 0.093818182);
+//  set_breakup_parameters(4.1890909, 0, 0.28);
 
+//  if( ChangeOptions&4 ) set_breakup_parameters(4.1890909, 0.0, 0.28 ); //r0
+//  if( ChangeOptions&4 ) set_breakup_parameters(4.1890909, 0.054161983, 0.17167603 ); //r1
+  if( ChangeOptions&4 || ChangeOptions&8 ) set_breakup_parameters(4.1890909, 0.093090909, 0.09381818 ); //r2
+
+//  if( ChangeOptions&4 ){
+//	set_breakup_parameters(sigma1 *(0.64/1.10), r0, vcc);
+//	set_breakup_parameters(sigma1 *(0.64/1.10), 0. *(0.64/1.10), (0.14 - 0.)/0.5);
+//	set_breakup_parameters(sigma1 *(0.64/1.10), r0 *(0.64/1.10), (0.14 - r0)/0.5);
+//	set_breakup_parameters(sigma1 *(0.64/1.10), 0., vcc);	
+//  }
+  
+//  cout << sigma1 << ", " << r0 << ", " << vcc << endl;
 
   cout << " Breakup model parameters set to sigma 1 = " << sigma1 << " r0 " << r0 << " vcc " << vcc << endl;
 
@@ -84,9 +95,9 @@ void calculate_breakup_modification(double sigma1 = 7.2, double r0 = 0.16, doubl
   double y[NRAP] = {-2.075, -1.825 , -1.575, -1.325, 0, 1.325, 1.575, 1.825, 2.075};   
   double BdNdy[NRAP] = {0.325, 0.515, 0.68, 0.90, 1, 0.66, 0.53, 0.41, 0.30};
   
-  static const int NARMS = 2;
-  double ylow[NARMS]={-2.2, 1.2};
-  double yhigh[NARMS]={-1.2, 2.2};
+  static const int NARMS = 3;
+  double ylow[NARMS]={-2.2, -0.5, 1.2};
+  double yhigh[NARMS]={-1.2, 0.5, 2.2};
   
   // the default in calculate_sigma_breakup.C is a Au target
   double ws_radius_list[2] = {6.38, 3.34};
@@ -446,12 +457,8 @@ void calculate_breakup_modification(double sigma1 = 7.2, double r0 = 0.16, doubl
   if( ChangeOptions&2 ){
 	Ebeam = 2510;
   }
-  double mstate;
-  if( !ChangeOptions&4 ){
-	mstate = 3.4;
-  } else{
-	mstate = 10.0;
-  }
+  double mstate = 3.4;
+  if( ChangeOptions&4 ) mstate = 10.0;
 
   double sigbr[NRAP][NPT][NRT];
   for(int irap=0;irap < NRAP;++irap)
@@ -480,8 +487,12 @@ void calculate_breakup_modification(double sigma1 = 7.2, double r0 = 0.16, doubl
 	      //   - i.e. the average absorption corresponds to a starting point of z = 0
 
 	      sigmod[irap][ipt][irt] = exp(-sigbr[irap][ipt][irt]*0.10*thick[irt]*0.5);  
-		  if( ChangeOptions&1 || ChangeOptions&2 )
+		  if( ChangeOptions&1 || ChangeOptions&2 ){
 			sigmod[irap][ipt][irt] = exp(-sigbr[irap][ipt][irt]*0.10*thick[irt]*1.);
+		  }
+		  if( ChangeOptions&16 ){
+			sigmod[irap][ipt][irt] = exp(-6*0.1*thick[irt]*1.);
+		  }
 //	      if(irap > 3)
 //		sigmod[irap][ipt][irt] = 1.0;   // sigbr not applied at forward rapidity
 	    }
@@ -553,22 +564,38 @@ void calculate_breakup_modification(double sigma1 = 7.2, double r0 = 0.16, doubl
   //==================================================
 
   double cent_pt_sigmod_arm[NARMS][NCENT][NPT] = {0};
-  for(int iarm = 0; iarm < NARMS; ++iarm)
-    {
+//  for(int iarm = 0; iarm < NARMS; ++iarm)
       for(int icent=0;icent<NCENT;++icent)
 	{
 	  for(int ipt = 0; ipt < NPT; ++ipt)
 	    {
 	      double wt = 0.0;
-	      for(int irap = 0+iarm*4; irap < 4+iarm*4; ++irap)
-		{
-		  cent_pt_sigmod_arm[iarm][icent][ipt] += cent_pt_sigmod[irap][icent][ipt] * BdNdy[irap];
-		  wt += BdNdy[irap];		    
-		}
-	      cent_pt_sigmod_arm[iarm][icent][ipt] /= wt;
+		  for(int irap=0;irap<4;irap++){
+			cent_pt_sigmod_arm[0][icent][ipt] += cent_pt_sigmod[irap][icent][ipt] * BdNdy[irap];
+			wt += BdNdy[irap];
+		  }
+		  cent_pt_sigmod_arm[0][icent][ipt] /= wt;
+
+
+		  wt = 0.0;
+		  for(int irap=0;irap<4;irap++){
+			cent_pt_sigmod_arm[2][icent][ipt] += cent_pt_sigmod[irap+5][icent][ipt] * BdNdy[irap+5];
+			wt += BdNdy[irap+5];
+		  }
+		  cent_pt_sigmod_arm[2][icent][ipt] /= wt;
+
+
+
+		  cent_pt_sigmod_arm[1][icent][ipt] += cent_pt_sigmod[4][icent][ipt] * BdNdy[4];
+
+//	      for(int irap = 0+iarm*4; irap < 4+iarm*4; ++irap)
+//		{
+//		  cent_pt_sigmod_arm[iarm][icent][ipt] += cent_pt_sigmod[irap][icent][ipt] * BdNdy[irap];
+//		  wt += BdNdy[irap];		    		  
+//		}
 	    }
 	}
-    }
+//    }
   
   // output the MB sigmod
   cout << "double sigmod_MB_arm0[NPT] = {";
@@ -659,7 +686,8 @@ void calculate_breakup_modification(double sigma1 = 7.2, double r0 = 0.16, doubl
   fout.close();
 
   bool plot_results = true;
-
+  TGraph *gr_rap[NCENT];
+  TGraph *gsigmod[NARMS][NCENT];
   if(plot_results)
     {
       // Plot the results vs pT for each arm and centrality bin
@@ -667,7 +695,7 @@ void calculate_breakup_modification(double sigma1 = 7.2, double r0 = 0.16, doubl
       
       TCanvas *c1 = new TCanvas("c1","c1",20,20,1600,800);
       //c1->SetLeftMargin(0.15);
-      c1->Divide(2,1);
+      c1->Divide(3,1);
       c1->cd(1);
       gPad->SetLeftMargin(0.13);
       gPad->SetBottomMargin(0.12);
@@ -678,7 +706,12 @@ void calculate_breakup_modification(double sigma1 = 7.2, double r0 = 0.16, doubl
       gPad->SetBottomMargin(0.12);
       gPad->SetTopMargin(0.05);
       gPad->SetRightMargin(0.05);
-      
+      c1->cd(3);
+      gPad->SetLeftMargin(0.13);
+      gPad->SetBottomMargin(0.12);
+      gPad->SetTopMargin(0.05);
+      gPad->SetRightMargin(0.05);
+
       TH1F *htemplate = new TH1F("htemplate","htemplate",1000,0.0,7.0);
       htemplate->GetYaxis()->SetTitleSize(0.06);
       htemplate->GetXaxis()->SetTitleSize(0.06);
@@ -696,7 +729,6 @@ void calculate_breakup_modification(double sigma1 = 7.2, double r0 = 0.16, doubl
       TLine *unit = new TLine(0.0, 1.0, 7.0, 1.0);
       unit->SetLineStyle(2);
       
-      TGraph *gsigmod[NARMS][NCENT];
       
       for(int iarm=0;iarm < NARMS;iarm++)
 	{
@@ -707,6 +739,7 @@ void calculate_breakup_modification(double sigma1 = 7.2, double r0 = 0.16, doubl
 	    {
 	      
 	      gsigmod[iarm][icent] = new TGraph(NPT, pt, cent_pt_sigmod_arm[iarm][icent]);
+		  gsigmod[iarm][icent]->SetName(Form("NMF_pt_%drap_%d_%dcent_%doption",iarm,centlow[icent],centhigh[icent],ChangeOptions));
 	      gsigmod[iarm][icent]->SetLineStyle(2);
 	      gsigmod[iarm][icent]->SetLineWidth(2.0);
 	      gsigmod[iarm][icent]->SetLineColor(kRed);
@@ -799,10 +832,10 @@ void calculate_breakup_modification(double sigma1 = 7.2, double r0 = 0.16, doubl
       
       TLegend * lrap = new TLegend(0.6, 0.6, 0.9, 0.9,"Centrality");
       
-      TGraph *gr_rap[NCENT];
       for(int icent=0; icent<NCENT; ++icent)
 	{
 	  gr_rap[icent] = new TGraph(NRAP, y, cent_sigmod[icent]);      
+	  gr_rap[icent]->SetName(Form("abs_%dto%d_%doption",centlow[icent],centhigh[icent],ChangeOptions));
 	  gr_rap[icent]->SetLineColor(col[icent]);
 	  gr_rap[icent]->SetMarkerStyle(20);
 	  gr_rap[icent]->SetMarkerColor(col[icent]);
@@ -852,6 +885,14 @@ void calculate_breakup_modification(double sigma1 = 7.2, double r0 = 0.16, doubl
 	}
       
     }
+
+ TFile* foutROOT = new TFile(Form("NMF_absonly_out_%doption.root",ChangeOptions),"recreate");
+ for(int icent=0; icent<NCENT; ++icent){ 
+	gr_rap[icent]->Write();
+	for(int iarm=0;iarm < NARMS;iarm++){
+		gsigmod[iarm][icent]->Write();
+	}
+ }
 }
 
 double get_thickness_integral(double b)
